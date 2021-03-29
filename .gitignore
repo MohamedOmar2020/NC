@@ -3,3 +3,4 @@ venv/
 mmc2.xlsx
 conda/
 CRC_clusters_neighborhoods_markers.csv
+.idea/
