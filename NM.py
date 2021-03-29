@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 import seaborn as sns
 from matplotlib import pyplot as plt
-%matplotlib inline
+%matplotlib
 
 cells2 = pd.read_csv('CRC_clusters_neighborhoods_markers.csv')
 
