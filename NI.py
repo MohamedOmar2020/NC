@@ -23,9 +23,13 @@ def get_windows(job, n_neighbors):
     start_time, idx, tissue_name, indices = job
     job_start = time.time()
 
+    # exprs: a list with unique tissue region names (140 elements)
     print("Starting:", str(idx + 1) + '/' + str(len(exps)), ': ' + exps[idx])
 
+    # tissue_group: a grouped data frame with X and Y coordinates grouped by unique tissue regions
+    # The function get_group(): i guess will construct a dataframe based on tissue_name
     tissue = tissue_group.get_group(tissue_name)
+
     to_fit = tissue.loc[indices][[X, Y]].values
 
     #     fit = NearestNeighbors(n_neighbors=n_neighbors+1).fit(tissue[[X,Y]].values)
@@ -47,6 +51,7 @@ def get_windows(job, n_neighbors):
           end_time - start_time)
     return neighbors.astype(np.int32)
 
+######################################################################
 ks = [5,10,20] # k=5 means it collects 5 nearest neighbors for each center cell
 path_to_data = 'CRC_clusters_neighborhoods_markers.csv'
 X = 'X:X'
@@ -70,8 +75,15 @@ if file_type == 'pickle':
 if file_type == 'csv':
     cells = pd.read_csv(path_to_data)
 
+##########################################################
 # Add dummy variables for cell types
-cells = pd.concat([cells,pd.get_dummies(cells[cluster_col])],1)
+#Dummy = pd.get_dummies(cells["ClusterName"])
+
+# Connect them together (like cbind in R i guess) // The axis arguemnt (0: index or 1: columns): The axis to concatenate along.
+#Connect = pd.concat([cells, Dummy],axis=1)
+
+# Original code (all together)
+cells = pd.concat([cells,pd.get_dummies(cells[cluster_col])], axis = 1)
 
 
 #cells = cells.reset_index() #Uncomment this line if you do any subsetting of dataframe such as removing dirt etc or will throw error at end of next next code block (cell 6)
@@ -80,14 +92,39 @@ cells = pd.concat([cells,pd.get_dummies(cells[cluster_col])],1)
 sum_cols = cells[cluster_col].unique()
 values = cells[sum_cols].values
 
+
 ####################################################
 ## find windows for each cell in each tissue region
+
+# Keep the X and Y coordianates + the tissue regions >> then group by tissue regions (140 unique regions)
 tissue_group = cells[[X,Y,reg]].groupby(reg)
+
+# Take a look at the grouped data frame : Basically 140 dataframes (one for each region) with 3 columns: XX, YY, and region
+# tissue_group.apply(print)
+
+# Create a list of unique tissue regions
 exps = list(cells[reg].unique())
+
+# time.time(): current time is seconds !
+# indices: a list of indices (rownames) of each dataframe in tissue_group
+# exps.index(t) : t represents the index of each one of the indices eg, exps.index("reg001_A") is 0 and exps.index("reg001_B") is 1 and so on
+# t is the name of tissue regions eg, reg001_A
 tissue_chunks = [(time.time(),exps.index(t),t,a) for t,indices in tissue_group.groups.items() for a in np.array_split(indices,1)]
+
+# View a tissue chunk (the job described in the first function):
+# consists of 4 items:
+# 1. the start time
+# 2. the index eg, 0,1,2, etc
+# 3. the name of tissue region eg, reg001_A
+# 4. int64Index : mmutable sequence used for indexing and alignment. The basic object storing axis labels for all pandas objects. Int64Index is a special case of Index with purely integer labels. .
+# 4. indices of region in original dataframe
+
+#DD = tissue_chunks[1]
+#SS = DD[3]
+
 tissues = [get_windows(job,n_neighbors) for job in tissue_chunks]
 
-######################
+#######################################################
 # for each cell and its nearest neighbors, reshape and count the number of each cell type in those neighbors.
 out_dict = {}
 for k in ks:
