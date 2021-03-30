@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import MiniBatchKMeans
 import seaborn as sns
 
-# Window: the 10 nearest spatial neighberous of a cell
+# Window: the 20 nearest spatial neighberous of a cell
 # as measured by Euclidean distance between X/Y coordinates.
 
 
@@ -59,13 +59,15 @@ def get_windows(job, n_neighbors):
 
     # m[1].shape[0]: nrows of m[1]
     # m[1].shape[1]: ncol of m[1]
-    # I guess here is taking the row numbers (np.arange(MM[1].shape[0])) then multiplying it by 20 (* MM[1].shape[1])
-    # Example: ADD =  np.arange(MM[1].shape[0]) * MM[1].shape[1]
+    # I guess here is taking the row numbers 0:1164 (np.arange(MM[1].shape[0])) then multiplying it by 20 (* MM[1].shape[1])
+    # Example: ADD =  np.arange(MM[1].shape[0]) * MM[1].shape[1] > an array of 1 row (nrow * 20) and 1164 columns
     add = np.arange(m[1].shape[0]) * m[1].shape[1]
 
-
+    # flatten(): collapses the array into 1 dimenstion
+    # SI2 = MM[1].flatten()[ARGS + ADD[:, None]]
     sorted_indices = m[1].flatten()[args + add[:, None]]
 
+    # NN = SS.index.values[SI]
     neighbors = tissue.index.values[sorted_indices]
 
     end_time = time.time()
@@ -145,7 +147,13 @@ tissue_chunks = [(time.time(),exps.index(t),t,a) for t,indices in tissue_group.g
 #DD = tissue_chunks[1]
 #SS = DD[3]
 
+# Get the window (the 20 closest cells to each cell in each tissue region)
+# Returns a list of 140 items (tissue regions), each is an array of cells X neighbors (20) and the values are the indices of these neighbors
 tissues = [get_windows(job,n_neighbors) for job in tissue_chunks]
+
+len(tissues)
+TT = tissues[0]
+TT.shape
 
 #######################################################
 # for each cell and its nearest neighbors, reshape and count the number of each cell type in those neighbors.
