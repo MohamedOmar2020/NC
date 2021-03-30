@@ -27,20 +27,43 @@ def get_windows(job, n_neighbors):
     print("Starting:", str(idx + 1) + '/' + str(len(exps)), ': ' + exps[idx])
 
     # tissue_group: a grouped data frame with X and Y coordinates grouped by unique tissue regions
-    # The function get_group(): i guess will construct a dataframe based on tissue_name
+    # The function get_group(): i guess will construct a dataframe based on tissue_name: like using filter in dplyr
+    # eg, SS = tissue_group.get_group("reg001_A") > will output a dataframe for reg001_A tissue region
     tissue = tissue_group.get_group(tissue_name)
 
+    # .loc: Access a group of rows and columns by label(s) or a boolean array.
+    # this code accesses the X and Y values from each row (each cell) belonging to a certain tissue
+    # eg, SS.loc[1][['X:X','Y:Y']].values
+    # Example:
+    # II = SS.index
+    # TF = SS.loc[II][['X:X', 'Y:Y']].values > returns a dataframe with X:X and Y:Y values (2 columns 0 and 1 which is X:X and Y:Y)
     to_fit = tissue.loc[indices][[X, Y]].values
 
-    #     fit = NearestNeighbors(n_neighbors=n_neighbors+1).fit(tissue[[X,Y]].values)
+    # Unsupervised learner for implementing neighbor searches.
+    # Example: FF = NearestNeighbors(n_neighbors=20).fit(SS[['X:X', 'Y:Y']].values)
     fit = NearestNeighbors(n_neighbors=n_neighbors).fit(tissue[[X, Y]].values)
+
+    # Find the nearest neighbors
+    # Example: MM = FF.kneighbors(TF)
+    # Returns 2 arrays (0 and 1), each is n_queries X n_neighberos dimensions
+    # so 1164 (the nrow of tissue or SS/ number of cells) X 20 (the 20 neigherest points or cells)
     m = fit.kneighbors(to_fit)
-    #     m = m[0][:,1:], m[1][:,1:]
+
+    # MM = MM[0], MM[1] >> no change
     m = m[0], m[1]
 
-    # sort_neighbors
+    ## sort_neighbors
+    # argsort: Returns the indices that would sort an array
+    # Example: ARGS = MM[0].argsort(axis = 1)
     args = m[0].argsort(axis=1)
+
+    # m[1].shape[0]: nrows of m[1]
+    # m[1].shape[1]: ncol of m[1]
+    # I guess here is taking the row numbers (np.arange(MM[1].shape[0])) then multiplying it by 20 (* MM[1].shape[1])
+    # Example: ADD =  np.arange(MM[1].shape[0]) * MM[1].shape[1]
     add = np.arange(m[1].shape[0]) * m[1].shape[1]
+
+
     sorted_indices = m[1].flatten()[args + add[:, None]]
 
     neighbors = tissue.index.values[sorted_indices]
